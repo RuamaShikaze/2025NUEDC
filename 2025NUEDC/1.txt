@@ -1,0 +1,54 @@
+#include <ti/devices/mspm0g3xx/driverlib/driverlib.h>
+#include <stdio.h>
+#include <math.h>
+
+// 假设陀螺仪数据读取函数
+float read_gyro_data() {
+    // 这里需要实现实际的陀螺仪数据读取逻辑
+    return 0.0;
+}
+
+// 电机控制函数
+void control_motor(int speed, int steer) {
+    // 这里需要实现实际的电机控制逻辑
+}
+
+int main(void)
+{
+    // 初始化系统时钟
+    MAP_SysCtlClockFreqSet((SYSCTL_XTAL_24MHZ | SYSCTL_OSC_MAIN | SYSCTL_USE_PLL | SYSCTL_CFG_VCO_480), 48000000);
+
+    // 初始化UART0
+    MAP_UART0_InitExpClk(48000000, 115200);
+
+    while(1)
+    {
+        // 读取陀螺仪数据
+        float gyro_data = read_gyro_data();
+
+        // 发送陀螺仪数据到OpenMV4 H7
+        char gyro_msg[20];
+        snprintf(gyro_msg, sizeof(gyro_msg), "G:%.2f\n", gyro_data);
+        MAP_UART0_SendString(gyro_msg);
+
+        // 接收OpenMV4 H7的控制指令
+        if (MAP_UART0_IsCharReady()) {
+            char buffer[20];
+            int index = 0;
+            char c;
+            while ((c = MAP_UART0_GetChar()) != '\n' && index < sizeof(buffer) - 1) {
+                buffer[index++] = c;
+            }
+            buffer[index] = '\0';
+
+            int speed, steer;
+            if (sscanf(buffer, "S%d,T%d", &speed, &steer) == 2) {
+                // 控制电机
+                control_motor(speed, steer);
+            }
+        }
+
+        // 适当延时
+        MAP_SysCtlDelay(48000000 / 3 / 10); // 100ms
+    }
+}
