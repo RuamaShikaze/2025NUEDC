@@ -10,8 +10,8 @@ pan_servo.calibration(500, 2500, 500)
 tilt_servo.calibration(500, 2500, 500)
 
 # 初始化PID控制器
-pan_pid = PID(p=0.1, i=0.02, imax=90)
-tilt_pid = PID(p=0.05, i=0.01, imax=90)
+pan_pid = PID(p=0.031, i=0, imax=90)
+tilt_pid = PID(p=0.05, i=0, imax=90)
 
 # 初始化摄像头
 sensor.reset()
@@ -28,7 +28,7 @@ IMAGE_CENTER_Y = sensor.height() // 2
 
 # 颜色阈值
 WHITE_THRESHOLD = [(70, 95, -10, 10, -10, 10)]  # 白色阈值
-BLACK_THRESHOLD = [(0, 40, -10, 10, 10, -10)]   # 黑色阈值
+BLACK_THRESHOLD = [(0, 40, -10, 10, 10, -10)]  # 黑色阈值
 
 class KalmanFilter:
     def __init__(self, process_noise=0.01, measurement_noise=1, initial_value=0):
@@ -139,8 +139,8 @@ def has_black_border(img, blob, border_width=3):
 def move_to_initial_position():
     """将云台移动到初始位置"""
     print("Moving to initial position...")
-    pan_servo.angle(90)
-    tilt_servo.angle(90)
+    pan_servo.angle(135)
+    tilt_servo.angle(0)
     time.sleep_ms(200)
 
 move_to_initial_position()
@@ -195,7 +195,7 @@ while True:
                 pan_error = filtered_x - IMAGE_CENTER_X
                 tilt_error = filtered_y - IMAGE_CENTER_Y
 
-                #print("pan_error: ", pan_error)
+                print("pan_error: ", pan_error)
                 pan_output = pan_pid.get_pid(pan_error, 1) / 2
                 tilt_output = tilt_pid.get_pid(tilt_error, 1)
 
@@ -218,13 +218,12 @@ while True:
                 pan_error = filtered_x - IMAGE_CENTER_X
                 tilt_error = filtered_y - IMAGE_CENTER_Y
 
-                #print("Using blob center - pan_error: ", pan_error,"tilt_error:",tilt_error)
+                print("Using blob center - pan_error: ", pan_error)
                 pan_output = pan_pid.get_pid(pan_error, 1) / 2
                 tilt_output = tilt_pid.get_pid(tilt_error, 1)
-                #print("panpid:",pan_output,"tiltpid:",tilt_output)
+
                 pan_servo.angle(pan_servo.angle() - pan_output)
                 tilt_servo.angle(tilt_servo.angle() - tilt_output)
-            print("err_x=%.1f,err_y=%.1f,out_pan=%.1f,out_tilt=%.1f"%(pan_error,tilt_error,pan_output,tilt_output))
     else:
         pan_pid.reset_I()
         tilt_pid.reset_I()
@@ -233,4 +232,4 @@ while True:
         kalman_y = KalmanFilter(process_noise=0.01, measurement_noise=1, initial_value=IMAGE_CENTER_Y)
 
     # 显示帧率
-    #img.draw_string(0, 0, "FPS:%.2f" % clock.fps(), color=(255,0,0))
+    img.draw_string(0, 0, "FPS:%.2f" % clock.fps(), color=(255,0,0))
